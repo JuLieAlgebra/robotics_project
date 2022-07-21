@@ -1,0 +1,9 @@
+<package format="2">
+  <name>robotics_project</name>
+  <version>0.0.1</version>
+  <description>
+  Robotics project.
+  </description>
+  <maintainer email="juliealgebra@gmail.com">Julieanna Bacon</maintainer>
+  <license>BSD</license>
+</package>
