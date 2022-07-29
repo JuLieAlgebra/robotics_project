@@ -28,6 +28,15 @@ class ColorizedMap:
     still would make you forget everywhere you've been before.
     """
     def __init__(self, map_size=10, rate=5, tolerance=0.5):
+        """
+        Constructor
+
+        Params
+        ======
+        map_size: number of processed lidar scans to store (each scan has ~300 points)
+        rate: in hertz, the frequency of map publication
+        tolerance: in meters, how far the robot should have to move before processing another scan
+        """
         self.map_size = map_size
         self.rate = rate
         self.tolerance = tolerance
@@ -63,6 +72,7 @@ class ColorizedMap:
         rospy.Subscriber('odom', Odometry, self.store_pose)
         rospy.Subscriber('camera/rgb/image_raw', Image, self.colorize)
         rospy.Subscriber('camera/rgb/camera_info', CameraInfo, self.store_camera_info)
+
         # we will publish on a timer set by rate
         rospy.Timer(rospy.Duration(1.0/self.rate), self.publish_map)
 
@@ -91,6 +101,7 @@ class ColorizedMap:
         # another coordinate transformation. Need to convert robot position to lidar position (lidar pose extracted from model file)
         self.position = position - np.array([[-0.052], [0], [0.111]])
         self.rotation = rotation
+
         # since the transpose of a rotation matrix is its inverse
         self.world_to_body = rotation.T
 
@@ -109,8 +120,8 @@ class ColorizedMap:
         if self.camera_matrix is None:
             transformation_matrix = np.array(list(msg.K), dtype=float).reshape((3,3))
             self.camera_matrix = transformation_matrix
-            self.camera_width = 1080 #int(msg.width)
-            self.camera_height = 1920#int(msg.height)
+            self.camera_width = 1080  #int(msg.width)
+            self.camera_height = 1920 #int(msg.height)
 
     def update_map(self, msg):
         """
@@ -197,13 +208,14 @@ class ColorizedMap:
                     point = np.dot(self.robot_to_camera, body_point - (np.array([[0.064], [-0.047], [0.107]]) - np.array([[-0.052], [0], [0.111]])))
                     # get camera coordintes
                     u, v, w = np.dot(self.camera_matrix, point)
-                    cam_x = float(u/w) #+ self.camera_width/2
-                    cam_y = float(v/w) #+ self.camera_height/2
+                    cam_x = float(u/w)
+                    cam_y = float(v/w)
 
                     # if the point is in the image, proceed
                     if (cam_x >= 0 and cam_x < self.camera_width) and (cam_y >= 0 and cam_y < self.camera_height):
                         # get pixel coordinates in the camera image
                         x, y = int(cam_x), int(cam_y)
+
                         # get the color of the point based on where it intersects the image plane
                         rgb = (image[x, y, 0]/256.0, image[x, y, 1]/256.0, image[x, y, 2]/256.0)
                         colors[:, j] = rgb
