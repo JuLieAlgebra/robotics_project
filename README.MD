@@ -1,19 +1,22 @@
 # Robotics Project
 
-Colorizing 2D laserscan data via imagery for turtlebot3 waffle and waffle_pi models with ROS and Gazebo.
+Colorizing 2D laserscan data via imagery for turtlebot3 waffle and waffle_pi models with ROS and Gazebo. You can see a demo [here](https://www.youtube.com/watch?v=kpQANt3AYjc&t=66s). 
+
+![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/reamde_images/all_colored.png?raw=true)
+![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/reamde_images/camera_feed.png?raw=true)
+![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/reamde_images/colored_uncolored.png?raw=true)
 
 **Setup Instructions:**\
-Follow instructions [here](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/) for installing ROS, Gazebo, and the turtlebot3 ROS package.\
+Follow instructions [here](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/) for installing ROS, Gazebo, and the turtlebot3 ROS package.
 
 Then via terminal: \
 `export TURTLEBOT3_MODEL=waffle`  or `export TURTLEBOT3_MODEL=waffle_pi` \
-`roslaunch turtlebot3_gazebo turtlebot3_world.launch` \
-`roslaunch turtlebot3_gazebo turtlebot3_gazebo_rviz.launch` 
+`roslaunch turtlebot3_gazebo turtlebot3_world.launch` 
 
-To drive turtlebot3: \
-roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch 
+To drive the turtlebot3: \
+`roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch`
 
-**To build & launch ColorizedMap node:**
+**To build & launch ColorizedMap node:** \
 Clone this repo to wherever you store your ROS packages (usually `~/catkin_ws/src/`) via: `git clone git@github.com:JuLieAlgebra/robotics_project.git` \
 Make sure to `chmod +x ~/catkin_ws/src/robotics_project/src/colormap.py`, though replace the absolute directory with your own if you have a different structure. \
 If you use catkin build for ROS packages, navigate to `~/catkin_ws/src` or wherever you store your ROS packages, then `catkin build` in the directory. \
