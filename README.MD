@@ -2,9 +2,9 @@
 
 Colorizing 2D laserscan data via imagery for turtlebot3 waffle and waffle_pi models with ROS and Gazebo. You can see a demo [here](https://www.youtube.com/watch?v=kpQANt3AYjc&t=66s). 
 
-![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/reamde_images/all_colored.png?raw=true)
-![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/reamde_images/camera_feed.png?raw=true)
-![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/reamde_images/colored_uncolored.png?raw=true)
+![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/readme_images/all_colored.png?raw=true)
+![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/readme_images/camera_feed.png?raw=true)
+![colorized point cloud](https://github.com/JuLieAlgebra/robotics_project/blob/master/readme_images/colored_uncolored.png?raw=true)
 
 **Setup Instructions:**\
 Follow instructions [here](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/) for installing ROS, Gazebo, and the turtlebot3 ROS package.
