@@ -11,7 +11,7 @@ Follow instructions [here](https://emanual.robotis.com/docs/en/platform/turtlebo
 
 Then via terminal: \
 `export TURTLEBOT3_MODEL=waffle`  or `export TURTLEBOT3_MODEL=waffle_pi` \
-`roslaunch turtlebot3_gazebo turtlebot3_world.launch` 
+`roslaunch turtlebot3_gazebo turtlebot3_house.launch` 
 
 To drive the turtlebot3: \
 `roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch`

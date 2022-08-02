@@ -37,6 +37,7 @@ class ColorizedMap:
         rate: in hertz, the frequency of map publication
         tolerance: in meters, how far the robot should have to move before processing another scan
         """
+        # configurable parameters of the class
         self.map_size = map_size
         self.rate = rate
         self.tolerance = tolerance
@@ -46,11 +47,12 @@ class ColorizedMap:
         self.colors_deque = deque([])
 
         # transformation products
-        self.position = None
-        self.rotation = None
-        self.world_to_body = None
+        self.position = None # from robot body-frame to robot world-frame
+        self.rotation = None # from robot body-frame to robot world-frame
 
         # needed to figure out how the robot and the camera coordinate system relate
+        # by reading the documentation on camera_info here: https://wiki.ros.org/image_pipeline/CameraInfo
+        # you can see how the robot's xyz differs from the camera's xyz
         self.robot_to_camera = np.array([[ 0,  0,  1],
                                          [-1,  0,  0],
                                          [ 0, -1,  0]]).T
@@ -59,6 +61,7 @@ class ColorizedMap:
         self.camera_matrix = None
         self.camera_height = None
         self.camera_width = None
+
         # to convert from ROS (encoded) Image message to processable 3D datacube
         self.bridge = CvBridge()
 
@@ -91,19 +94,18 @@ class ColorizedMap:
                          msg.pose.pose.position.z
                         ]).reshape((3,1))
 
+        # the turtlebot3 uses quaternions, so this is to convert to a rotation matrix
         rotation = quaternion_matrix((
             msg.pose.pose.orientation.x,
             msg.pose.pose.orientation.y,
             msg.pose.pose.orientation.z,
             msg.pose.pose.orientation.w
-        ))[:3,:3]
+        ))[:3,:3] # since it returns a 4x4 matrix
 
         # another coordinate transformation. Need to convert robot position to lidar position (lidar pose extracted from model file)
-        self.position = position - np.array([[-0.052], [0], [0.111]])
+        robot_to_lidar_pos = np.array([[-0.052], [0], [0.111]])
+        self.position = position - robot_to_lidar_pos
         self.rotation = rotation
-
-        # since the transpose of a rotation matrix is its inverse
-        self.world_to_body = rotation.T
 
     def store_camera_info(self, msg):
         """
@@ -117,9 +119,11 @@ class ColorizedMap:
         ======
         msg: ROS CameraInfo message
         """
+        # this only needs to get set once
         if self.camera_matrix is None:
             transformation_matrix = np.array(list(msg.K), dtype=float).reshape((3,3))
             self.camera_matrix = transformation_matrix
+            # this information is not actually being published in the message, the published width and height are for the compressed images
             self.camera_width = 1080  #int(msg.width)
             self.camera_height = 1920 #int(msg.height)
 
@@ -133,6 +137,7 @@ class ColorizedMap:
         ======
         msg: ROS LaserScan message
         """
+        # since this all happens asynchronously, we could call this method before the rotation matrix was stored
         if (self.position is None) or (self.rotation is None):
             return
         # checks that the robot has moved more than our tolerance amount, otherwise skip
@@ -140,11 +145,14 @@ class ColorizedMap:
         elif np.linalg.norm(self.position - self.last) < self.tolerance:
             return
         else:
+            # if we are updating the map, update our last position to reset the tolerance check
             self.last = self.position.copy()
 
+        # start of laserscan message conversion from polar to cartesian
         ranges = np.array(msg.ranges, float)
         angles = np.linspace(msg.angle_min, msg.angle_max, len(ranges))
 
+        # only use the valid data
         valids = np.isfinite(ranges)
         ranges = ranges[valids]
         angles = angles[valids]
@@ -164,6 +172,7 @@ class ColorizedMap:
         self.colors_deque.append(colors)
         assert len(self.maps_deque) == len(self.colors_deque)
 
+        # for computational complexity, can only store so many laser scans
         if len(self.maps_deque) > self.map_size:
             self.colors_deque.popleft()
             self.maps_deque.popleft()
@@ -171,7 +180,13 @@ class ColorizedMap:
     def is_in_front(self, point):
         """
         Checks if point is in front of robot or behind it by dotting robot heading
-        vector (first column of rotation matrix) with point vector
+        vector (first column of rotation matrix) with point vector.
+        Needs to recenter the world-frame point at the robot's current position.
+
+        Without this check, the transformation in colorize cannot distinguish between points
+        behind and in front of the robot, so the robot would colorize all points on the same
+        ray through the camera image the same color (a green pillar in front of the robot would
+        mean it colored the points behind it - out of view - green too).
 
         Params
         ======
@@ -191,9 +206,11 @@ class ColorizedMap:
         ======
         msg: ROS Image message
         """
+        # since this all happens asynchronously, we could call this method before the rotation matrix was stored
         if self.camera_matrix is None or self.rotation is None:
             return
 
+        # converting from the (encoded) Image message data to a processable image
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
         image = np.array(cv_image, dtype=float)
 
@@ -222,20 +239,25 @@ class ColorizedMap:
 
     def publish_map(self, _):
         """
-        At rate specified, publish the new map. Needs to convert internal colorized map
-        to pointcloud message.
+        At rate specified in init, publish the new map.
+
+        Converts internal colorized map to pointcloud message, as that allows for both cartesian
+        coordinates and, most importantly, setting a color channel for the points.
         """
         map_msg = PointCloud()
 
         map_msg.header.stamp = rospy.get_rostime()
         map_msg.header.frame_id = "odom"
 
+        # RViz expects there to be three color channels, with each point having a value in each color
         map_msg.channels = [ChannelFloat32('r', []), ChannelFloat32('g', []), ChannelFloat32('b', [])]
 
+        # convert our internal representation to a pointcloud message
         for (points, colors) in zip(self.maps_deque, self.colors_deque):
             for (point, color) in zip(points.T, colors.T):
                 map_msg.points.append(Point32(*point))
                 if np.isnan(color[0]):
+                    # if the point still isn't colored when we publish, color it blue
                     color = (0.0, 0.0, 0.8)
                 map_msg.channels[0].values.append(color[0])
                 map_msg.channels[1].values.append(color[1])
